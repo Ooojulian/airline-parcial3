@@ -1,0 +1,17 @@
+.env
+*.env
+!.env.example
+*.dump
+__pycache__/
+*.pyc
+.venv/
+*.zip
+*.pem
+*credentials*
+*.csv
+*.parquet
+raw/
+raw-sample/
+.env.*
+!.env.example
+*.tgz

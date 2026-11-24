@@ -1,0 +1,13 @@
+assumptions: >-
+  Proyeccion mensual en us-east-1 con precios on-demand de pricing.yaml (730 h). API y RDS 24/7.
+  Carga: ~5.000 busquedas/dia y ~150 reservas/dia (~155.000 eventos/mes, ~1 KB cada uno, ~0.15 GB/mes).
+  El stream de Kinesis (1 shard provisionado, retencion 24 h) solo existe mientras probamos: ~60 h/mes.
+  La estrella se reconstruye con Athena CTAS bajo demanda (~200 refrescos/mes). Sin NAT, sin balanceador, sin Multi-AZ.
+line_items:
+  - {service: "EC2", detail: "t3.small 730 h x 0.0208 = 15.18 + EBS gp3 8 GB = 0.64 (API, consumidor del stream)", monthly_usd: 15.82}
+  - {service: "RDS", detail: "db.t3.micro single-AZ 730 h x 0.017 = 12.41 + 20 GB gp3 = 2.30", monthly_usd: 14.71}
+  - {service: "Kinesis", detail: "1 shard provisionado solo en pruebas: 60 h x 0.015 = 0.90 + PUT units centavos", monthly_usd: 0.92}
+  - {service: "Firehose", detail: "entrega Kinesis -> S3 en GZIP, ~0.15 GB/mes x 0.029", monthly_usd: 0.01}
+  - {service: "S3", detail: "landing zone + Parquet de la estrella + resultados Athena, < 1 GB", monthly_usd: 0.10}
+  - {service: "Athena", detail: "200 refrescos CTAS (5 consultas c/u) + ~200 consultas, minimo 10 MB c/u = ~12 GB x 5 USD/TB", monthly_usd: 0.06}
+  - {service: "Glue", detail: "Data Catalog: 2 bases y ~10 tablas, capa gratuita", monthly_usd: 0.00}
