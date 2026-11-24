@@ -54,7 +54,7 @@
   <section class="live-trend" aria-labelledby="trend-title">
     <div class="trend-head">
       <h2 id="trend-title">Búsquedas en la ventana, lectura a lectura</h2>
-      <p class="muted">Una lectura cada 3 s mientras esta página está abierta.</p>
+      <p class="muted">Una lectura cada 3 s mientras esta página está abierta · <span id="trend-max">máx --</span></p>
     </div>
     <svg id="trend" viewBox="0 0 600 140" preserveAspectRatio="none" role="img" aria-label="Tendencia de búsquedas"></svg>
   </section>
@@ -87,16 +87,15 @@
 
   function drawTrend() {
     const svg = $("trend"), W = 600, H = 140, pad = 8;
-    if (history.length < 2) { svg.innerHTML = '<text x="300" y="75" text-anchor="middle" class="trend-empty">Esperando lecturas…</text>'; return; }
+    if (history.length < 2) { svg.innerHTML = ''; $("trend-max").textContent = "esperando lecturas…"; return; }
     const max = Math.max(1, ...history), n = history.length;
     const x = (i) => pad + (W - 2 * pad) * i / (MAX_POINTS - 1);
     const y = (v) => H - pad - (H - 2 * pad) * v / max;
     const pts = history.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
     const area = `${x(0)},${H - pad} ${pts} ${x(n - 1)},${H - pad}`;
     svg.innerHTML = `<line class="trend-base" x1="${pad}" x2="${W - pad}" y1="${H - pad}" y2="${H - pad}"/>` +
-      `<polygon class="trend-area" points="${area}"/><polyline class="trend-line" points="${pts}"/>` +
-      `<circle class="trend-dot" cx="${x(n - 1)}" cy="${y(history[n - 1])}" r="4"/>` +
-      `<text class="trend-max" x="${W - pad}" y="18" text-anchor="end">máx ${fmt.format(max)}</text>`;
+      `<polygon class="trend-area" points="${area}"/><polyline class="trend-line" points="${pts}"/>`;
+    $("trend-max").textContent = `máx ${fmt.format(max)}`;
   }
 
   async function poll() {

@@ -314,7 +314,7 @@ main{padding-bottom:72px}
 .live-dot.on{background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:pulse 2s infinite}
 .live-dot.off{background:var(--err)}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(20,120,74,.45)}70%{box-shadow:0 0 0 10px rgba(20,120,74,0)}100%{box-shadow:0 0 0 0 rgba(20,120,74,0)}}
-.live-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:22px}
+.live-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:26px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:18px 20px}
 .tile h2{margin:0;font:600 .95rem/1.2 var(--font);color:var(--ink-2)}
 .tile-v{margin:8px 0 4px;font:800 clamp(2.2rem,5vw,3.2rem)/1 var(--font);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
