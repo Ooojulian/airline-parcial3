@@ -3,6 +3,7 @@
 set -euo pipefail
 export AWS_DEFAULT_REGION=us-east-1
 cd /opt/airline-system/backend
+B=airline-system-$(aws sts get-caller-identity --query Account --output text)
 [ "${1:-}" = "--build" ] && docker build -t airline-api .
 docker rm -f airline-api 2>/dev/null || true
 docker run -d --name airline-api --restart unless-stopped -p 8000:8000 \
@@ -10,7 +11,7 @@ docker run -d --name airline-api --restart unless-stopped -p 8000:8000 \
   -e DB_USER="$(aws ssm get-parameter --name /airline/db/user --query Parameter.Value --output text)" \
   -e DB_PASSWORD="$(aws ssm get-parameter --name /airline/db/password --with-decryption --query Parameter.Value --output text)" \
   -e AWS_DEFAULT_REGION=us-east-1 -e KINESIS_STREAM="${KINESIS_STREAM:-airline-events}" \
-  -e STAR_BUCKET="${STAR_BUCKET:-airline-system-930581488240}" -e ATHENA_DATABASE=airline_star -e ATHENA_WORKGROUP=airline-p3 \
+  -e STAR_BUCKET="$B" -e ATHENA_OUTPUT="s3://$B/athena-results/" -e ATHENA_DATABASE=airline_star -e ATHENA_WORKGROUP=airline-p3 \
   -e DB_NAME=airline_oltp -e DB_PORT=5432 -e DB_POOL_MIN=4 -e DB_POOL_MAX=20 -e DB_POOL_TIMEOUT=120 \
   airline-api
 for i in $(seq 1 30); do curl -sf localhost:8000/health && echo && exit 0; sleep 2; done
