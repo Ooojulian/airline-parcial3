@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>En vivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27%3E%3Ccircle cx=%2712%27 cy=%2712%27 r=%2712%27 fill=%27%23c8102e%27/%3E%3Cpath transform=%27rotate(45 12 12)%27 fill=%27%23fff%27 d=%27M19 14.8v-1.5l-6-3.8V5.2a1.1 1.1 0 0 0-2.2 0v4.3l-6 3.8v1.5l6-1.9v4l-1.5 1.1v1.1l2.6-.8 2.6.8v-1.1L13 16.9v-4z%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span><span>Reservas <b>aéreas</b></span></a>
+    <nav aria-label="Secciones"><a href="/">Reservar</a><a href="/checkin">Check-in</a><a href="/manager">Panel gerencial</a><a href="/live" aria-current="page">En vivo</a></nav>
+  </div>
+</header>
+
+<section class="hero hero-short">
+  <svg class="hero-art" viewBox="0 0 1440 360" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <circle class="sun" cx="1130" cy="118" r="62"/>
+    <path class="trail" d="M140 236 C 430 110, 780 60, 1060 128"/>
+    <path class="ridge r1" d="M0 250 L110 196 L210 232 L330 158 L450 220 L560 172 L690 236 L820 148 L940 214 L1060 174 L1190 230 L1310 182 L1440 226 V360 H0Z"/>
+    <path class="ridge r2" d="M0 296 L150 246 L270 284 L410 228 L540 288 L670 244 L800 298 L940 248 L1080 294 L1210 254 L1340 290 L1440 262 V360 H0Z"/>
+    <path class="ridge r3" d="M0 334 L180 298 L330 328 L500 294 L660 332 L820 302 L990 334 L1150 304 L1300 332 L1440 310 V360 H0Z"/>
+  </svg>
+  <div class="hero-inner">
+    <h1>Lo que está pasando ahora</h1>
+    <p>Búsquedas, reservas y cancelaciones de los últimos minutos, leídas del stream de Kinesis y contadas por la hora en que ocurrió cada evento.</p>
+  </div>
+</section>
+
+<main>
+  <div class="search-card live-bar">
+    <div class="live-window" role="radiogroup" aria-label="Ventana de tiempo">
+      <span class="live-label">Ventana</span>
+      <button type="button" role="radio" data-w="5" aria-checked="true">5 min</button>
+      <button type="button" role="radio" data-w="15" aria-checked="false">15 min</button>
+      <button type="button" role="radio" data-w="30" aria-checked="false">30 min</button>
+      <button type="button" role="radio" data-w="60" aria-checked="false">60 min</button>
+    </div>
+    <p class="live-status" role="status"><span class="live-dot" id="dot" aria-hidden="true"></span><span id="status">Conectando…</span></p>
+  </div>
+
+  <section class="live-tiles" aria-label="Indicadores">
+    <article class="tile"><h2>Búsquedas</h2><p class="tile-v" id="v-searches">--</p><p class="tile-d" id="d-searches">&nbsp;</p></article>
+    <article class="tile"><h2>Reservas</h2><p class="tile-v" id="v-reservations">--</p><p class="tile-d" id="d-reservations">&nbsp;</p></article>
+    <article class="tile"><h2>Cancelaciones</h2><p class="tile-v" id="v-cancellations">--</p><p class="tile-d" id="d-cancellations">&nbsp;</p></article>
+    <article class="tile tile-red"><h2>Conversión</h2><p class="tile-v" id="v-conversion">--</p><p class="tile-d">reservas / búsquedas</p></article>
+  </section>
+
+  <section class="live-trend" aria-labelledby="trend-title">
+    <div class="trend-head">
+      <h2 id="trend-title">Búsquedas en la ventana, lectura a lectura</h2>
+      <p class="muted">Una lectura cada 3 s mientras esta página está abierta.</p>
+    </div>
+    <svg id="trend" viewBox="0 0 600 140" preserveAspectRatio="none" role="img" aria-label="Tendencia de búsquedas"></svg>
+  </section>
+
+  <section class="live-demo">
+    <div>
+      <h2>Probar en la demostración</h2>
+      <p class="muted">Hace una búsqueda real en la API (CLO a MDE). El evento viaja por Kinesis y debería aparecer arriba en unos segundos.</p>
+    </div>
+    <button type="button" class="btn-red" id="probe">Hacer una búsqueda de prueba</button>
+  </section>
+  <p class="msg info" id="probe-msg" role="status"></p>
+</main>
+<footer class="foot">Proyecto académico de Big Data, Universidad Sergio Arboleda.</footer>
+
+<script>
+(() => {
+  const POLL_MS = 3000, MAX_POINTS = 60;
+  let win = 5, last = null, history = [], timer = null, lastOk = 0;
+  const $ = (id) => document.getElementById(id);
+  const fmt = new Intl.NumberFormat("es-CO");
+
+  function setDelta(id, now, prev) {
+    const el = $(id);
+    if (prev == null || now === prev) { el.innerHTML = "&nbsp;"; el.className = "tile-d"; return; }
+    const d = now - prev;
+    el.textContent = (d > 0 ? "+" : "") + fmt.format(d) + " desde la lectura anterior";
+    el.className = "tile-d " + (d > 0 ? "up" : "down");
+  }
+
+  function drawTrend() {
+    const svg = $("trend"), W = 600, H = 140, pad = 8;
+    if (history.length < 2) { svg.innerHTML = '<text x="300" y="75" text-anchor="middle" class="trend-empty">Esperando lecturas…</text>'; return; }
+    const max = Math.max(1, ...history), n = history.length;
+    const x = (i) => pad + (W - 2 * pad) * i / (MAX_POINTS - 1);
+    const y = (v) => H - pad - (H - 2 * pad) * v / max;
+    const pts = history.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    const area = `${x(0)},${H - pad} ${pts} ${x(n - 1)},${H - pad}`;
+    svg.innerHTML = `<line class="trend-base" x1="${pad}" x2="${W - pad}" y1="${H - pad}" y2="${H - pad}"/>` +
+      `<polygon class="trend-area" points="${area}"/><polyline class="trend-line" points="${pts}"/>` +
+      `<circle class="trend-dot" cx="${x(n - 1)}" cy="${y(history[n - 1])}" r="4"/>` +
+      `<text class="trend-max" x="${W - pad}" y="18" text-anchor="end">máx ${fmt.format(max)}</text>`;
+  }
+
+  async function poll() {
+    try {
+      const r = await fetch(`/api/analytics/live?window=${win}`, { cache: "no-store" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const d = await r.json();
+      $("v-searches").textContent = fmt.format(d.searches);
+      $("v-reservations").textContent = fmt.format(d.reservations);
+      $("v-cancellations").textContent = fmt.format(d.cancellations);
+      $("v-conversion").textContent = (d.conversion * 100).toLocaleString("es-CO", { maximumFractionDigits: 1 }) + " %";
+      setDelta("d-searches", d.searches, last && last.searches);
+      setDelta("d-reservations", d.reservations, last && last.reservations);
+      setDelta("d-cancellations", d.cancellations, last && last.cancellations);
+      last = d;
+      history.push(d.searches); if (history.length > MAX_POINTS) history.shift();
+      drawTrend();
+      lastOk = Date.now();
+      $("dot").className = "live-dot on";
+      $("status").textContent = `En vivo, últimos ${d.window_minutes} min · actualizado ${new Date().toLocaleTimeString("es-CO")}`;
+    } catch (e) {
+      $("dot").className = "live-dot off";
+      $("status").textContent = "Sin conexión con la API, reintentando…";
+    }
+  }
+
+  function start() { clearInterval(timer); poll(); timer = setInterval(poll, POLL_MS); }
+
+  document.querySelectorAll(".live-window button").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll(".live-window button").forEach((o) => o.setAttribute("aria-checked", String(o === b)));
+    win = Number(b.dataset.w); last = null; history = []; drawTrend(); start();
+  }));
+
+  $("probe").addEventListener("click", async () => {
+    const btn = $("probe"), msg = $("probe-msg");
+    btn.disabled = true; msg.className = "msg info"; msg.textContent = "Buscando…";
+    const day = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10);
+    try {
+      const r = await fetch(`/api/flights/search?origin=CLO&destination=MDE&date=${day}`, { headers: { "X-Session-Id": "demo-" + Math.random().toString(36).slice(2, 10) } });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      msg.className = "msg ok"; msg.textContent = `Búsqueda enviada (${day}). Mire el contador de búsquedas.`;
+      setTimeout(poll, 1500);
+    } catch (e) {
+      msg.className = "msg err"; msg.textContent = "No se pudo hacer la búsqueda: " + e.message;
+    } finally { setTimeout(() => { btn.disabled = false; }, 1500); }
+  });
+
+  document.addEventListener("visibilitychange", () => { if (document.hidden) clearInterval(timer); else start(); });
+  drawTrend(); start();
+})();
+</script>
+</body>
+</html>
